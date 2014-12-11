@@ -16,6 +16,8 @@ const serverAddr = "172.17.212.194:9000"
 const trustnumber = 9
 
 var lastroll Roll
+var lastroll2 Roll
+var last bool
 var results []string
 
 func validName(input string) bool {
@@ -66,6 +68,7 @@ func handleResponse(response string, out chan<- string) {
 	if strings.Contains(response, "REJECTED") {
 		log.Fatalf("Registration request rejected.")
 	} else if strings.Contains(response, "ROUND STARTING") {
+		lastroll2 = Roll{"", 3, 1}
 		lastroll = Roll{"", 3, 1}
 		out <- fmt.Sprintf("JOIN;%s", parts[1])
 
@@ -89,6 +92,7 @@ func handleResponse(response string, out chan<- string) {
 		if len(parts) > 2 {
 			wuerfel := strings.Split(parts[2], ",")
 			if len(wuerfel) > 1 {
+				lastroll2 = lastroll
 				lastroll = Roll{parts[1], toInt(wuerfel[0]), toInt(wuerfel[1])}
 			} else {
 				// PLAYER LOST
@@ -135,7 +139,7 @@ func main() {
 	results = append(results, "6,6")
 	results = append(results, "2,1")
 
-	name = "MaxMeister"
+	name = "2MaxMeister2"
 
 	conn := newConnection()
 	defer conn.Close()
@@ -192,6 +196,13 @@ func getWert(roll Roll) int {
 }
 
 func shouldWeTrust(roll Roll) bool {
+	zweitwert := getWert(lastroll2)
+	letztwert := getWert(lastroll)
+
+	if zweitwert > 0 && letztwert-zweitwert > 4 {
+		return true
+	}
+
 	if getWert(roll) > trustnumber {
 		fmt.Printf("NEVER TRUST A %d,%d\n", roll.Eins, roll.Zwei)
 		return false
